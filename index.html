@@ -86,6 +86,13 @@
     white-space: nowrap;
   }
   .weight-value.capped { color: #fbbf24; }
+  .weight-value-kg {
+    font-size: 20px; font-weight: 500;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    color: #6b7280;
+    line-height: 1.1;
+    white-space: nowrap;
+  }
   .weight-unit {
     font-size: 11px; color: #6b7280;
     text-transform: uppercase;
@@ -281,7 +288,7 @@
     const warnEl = document.getElementById('warning-box');
 
     if (isNaN(pa) || isNaN(oat)) {
-      weightsEl.innerHTML = '<div class="weight-block"><div class="weight-value">—</div><div class="weight-unit">lb</div></div>';
+      weightsEl.innerHTML = '<div class="weight-block"><div class="weight-value">—</div><div class="weight-unit">lb</div></div><div class="weight-block"><div class="weight-value-kg">—</div><div class="weight-unit">kg</div></div>';
       warnEl.innerHTML = '';
       return;
     }
@@ -296,7 +303,8 @@
 
     const cappedClass = result.capped ? ' capped' : '';
     weightsEl.innerHTML =
-      '<div class="weight-block"><div class="weight-value' + cappedClass + '">' + fmt(result.lb) + '</div><div class="weight-unit">lb</div></div>';
+      '<div class="weight-block"><div class="weight-value' + cappedClass + '">' + fmt(result.lb) + '</div><div class="weight-unit">lb</div></div>' +
+      '<div class="weight-block"><div class="weight-value-kg">' + fmt(result.kg) + '</div><div class="weight-unit">kg</div></div>';
 
     const warnings = [];
     if (result.capped) {
