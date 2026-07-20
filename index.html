@@ -263,8 +263,19 @@
     const tFrac = t2 === t1 ? 0 : (oat - t1) / (t2 - t1);
     const paFrac = pa2 === pa1 ? 0 : (pa - pa1) / (pa2 - pa1);
 
-    const v1 = v11 + (v12 - v11) * tFrac;
-    const v2 = v21 + (v22 - v21) * tFrac;
+    // Blend along OAT for each PA edge. A capped grid cell (== MAX_KG) stores
+    // the plateau value, not the true chart curve -- the real value there may
+    // be higher. Linearly blending a capped corner toward a lower real
+    // neighbor would silently report a result below MAX_KG that the chart
+    // never actually shows. Hold the edge at MAX_KG whenever either endpoint
+    // is capped, so the cap can't be diluted away by interpolation.
+    function blend1D(a, b, frac) {
+      if (a === MAX_KG || b === MAX_KG) return MAX_KG;
+      return a + (b - a) * frac;
+    }
+
+    const v1 = blend1D(v11, v12, tFrac);
+    const v2 = blend1D(v21, v22, tFrac);
     const kg = v1 + (v2 - v1) * paFrac;
 
     const roundedKg = Math.round(kg / 10) * 10;
