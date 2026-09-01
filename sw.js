@@ -1,7 +1,7 @@
 // EC225 Single-Engine Hover Performance OGE (LO) - Service Worker
 // Caches the app for full offline use after first load
 
-const CACHE_NAME = 'ec225-se-lo-v4';
+const CACHE_NAME = 'ec225-se-lo-v5';
 const FILES_TO_CACHE = [
   './',
   './index.html'

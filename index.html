@@ -28,6 +28,25 @@
     border-radius: 16px;
   }
   header { text-align: center; margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid #1f2937; }
+  /* Back to the tool list. A home-screen PWA has no browser chrome and no
+     swipe-back gesture, so without this there is genuinely no way out of a
+     tool -- pilots were getting stranded. Sits left of the title, sized to
+     a comfortable thumb target. (Added 2026-09-01.) */
+  .back-link {
+    display: inline-flex; align-items: center; gap: 5px;
+    color: #2dd4bf; text-decoration: none;
+    font-size: 13px; font-weight: 500;
+    padding: 6px 12px 6px 8px; margin-left: -8px;
+    border: 1px solid #1f2937; border-radius: 8px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .back-link:active { background: #1f2937; }
+  .back-link svg { width: 14px; height: 14px; }
+  /* Its own row, left-aligned above the centred title. Deliberately NOT
+     absolutely positioned over the header: most tool titles are long
+     enough to wrap to two lines on a phone, and an overlaid link would
+     collide with them. A separate row cannot overlap at any width. */
+  .back-row { text-align: left; margin-bottom: 10px; }
   h1 { font-size: 20px; font-weight: 600; letter-spacing: 0.5px; }
   .subtitle { font-size: 11px; color: #7d8590; margin-top: 4px; letter-spacing: 1.2px; text-transform: uppercase; }
 
@@ -153,6 +172,7 @@
 <body>
 <div class="app">
   <header>
+    <div class="back-row"><a href="../" class="back-link" aria-label="Back to tool list"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg><span class="back-word">Tools</span></a></div>
     <h1>Single-Engine Hover Performance OGE</h1>
     <div class="subtitle">OEI LO Rating · Zero Wind · Bullets Closed</div>
   </header>
