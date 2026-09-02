@@ -1,7 +1,7 @@
 // EC225 Single-Engine Hover Performance OGE (LO) - Service Worker
 // Caches the app for full offline use after first load
 
-const CACHE_NAME = 'ec225-se-lo-v5';
+const CACHE_NAME = 'ec225-se-lo-v6';
 const FILES_TO_CACHE = [
   './',
   './index.html'
@@ -20,7 +20,14 @@ self.addEventListener('activate', function(event) {
   event.waitUntil(
     caches.keys().then(function(keys) {
       return Promise.all(
-        keys.filter(function(key) { return key !== CACHE_NAME; })
+        keys.filter(function(key) {
+              // Only remove OUR OWN superseded caches. A blanket
+              // "delete everything that isn't mine" would wipe the other
+              // tools' caches -- which the landing page's offline download
+              // fills on purpose -- so updating one app would silently strip
+              // the rest offline. (Fixed 2026-09-02.)
+              return key !== CACHE_NAME && key.indexOf('ec225-se-lo-v') === 0;
+            })
             .map(function(key) { return caches.delete(key); })
       );
     })
