@@ -132,6 +132,15 @@
     color: #fbbf24; font-size: 12px; border-radius: 8px;
     line-height: 1.5;
   }
+  /* ---- restored-inputs note ---- */
+  .sticky-note {
+    display: none; margin: 0 0 14px 0; padding: 9px 12px; border-radius: 6px;
+    background: rgba(125,133,144,0.10); border-left: 3px solid #2dd4bf;
+    font-size: 11px; line-height: 1.5; color: #9ca3af;
+  }
+  .sticky-note.show { display: block; }
+  .sticky-note a { color: #2dd4bf; text-decoration: none; font-weight: 600; }
+
   .info {
     margin-top: 14px; padding: 12px 14px;
     background: rgba(88, 166, 255, 0.06); border-left: 3px solid #58a6ff;
@@ -176,6 +185,8 @@
     <h1>Single-Engine Hover Performance OGE</h1>
     <div class="subtitle">OEI LO Rating · Zero Wind · Bullets Closed</div>
   </header>
+
+  <div class="sticky-note" id="sticky-note"></div>
 
   <div class="input-group">
     <div class="input-label">Pressure Altitude (ft)</div>
@@ -373,6 +384,131 @@
   }
 
   // Force-refresh: unregister service worker, clear caches, reload from network
+// ===================================================================
+// Remember the last inputs (per app)
+// -------------------------------------------------------------------
+// Greg's complaint: leave a tool and everything you typed is gone, so
+// moving between apps in one planning session means retyping PA and OAT
+// over and over.
+//
+// The safety problem with simply restoring them is obvious: a pilot opens
+// the app tomorrow, sees a number computed from yesterday's conditions, and
+// has no reason to doubt it. Three things prevent that:
+//   1. Restores expire. Anything older than 6 hours is discarded, not shown.
+//   2. The restore is never silent -- a note says the inputs came from a
+//      previous session and how long ago, with a one-tap Reset to defaults.
+//   3. Nothing is restored across devices or accounts; this is local only.
+// Storage is wrapped in try/catch throughout: localStorage throws in some
+// private-browsing contexts, and that must never break a calculator.
+// ===================================================================
+const EC225_INPUTS_KEY = 'ec225.inputs.se-lo';
+const EC225_INPUTS_MAX_AGE_MIN = 360;
+const EC225_INPUTS_SKIP = ['ff-file','fpl-file'];
+let EC225_INPUT_DEFAULTS = null;
+let EC225_EXTRA_DEFAULTS = null;
+
+function ec225InputEls(){
+  let list = [];
+  try { list = Array.prototype.slice.call(document.querySelectorAll('input, select')); }
+  catch (e) { return []; }
+  return list.filter(function(e){
+    return e && e.id && e.type !== 'file' && EC225_INPUTS_SKIP.indexOf(e.id) === -1;
+  });
+}
+
+function ec225SnapshotInputs(){
+  const v = {};
+  ec225InputEls().forEach(function(e){
+    v[e.id] = (e.type === 'checkbox' || e.type === 'radio') ? !!e.checked : e.value;
+  });
+  return v;
+}
+
+function ec225ApplyInputs(v){
+  if (!v) return 0;
+  let n = 0;
+  ec225InputEls().forEach(function(e){
+    if (!(e.id in v)) return;
+    if (e.type === 'checkbox' || e.type === 'radio') e.checked = !!v[e.id];
+    else e.value = v[e.id];
+    n++;
+  });
+  return n;
+}
+
+function ec225SaveInputs(){
+  try {
+    localStorage.setItem(EC225_INPUTS_KEY, JSON.stringify({
+      savedAt: Date.now(), v: ec225SnapshotInputs(), x: ec225ExtraState()
+    }));
+  } catch (e) {}
+}
+
+function ec225ClearInputs(){
+  try { localStorage.removeItem(EC225_INPUTS_KEY); } catch (e) {}
+}
+
+function ec225StickyAge(min){
+  if (min < 1) return 'a moment ago';
+  if (min < 60) return Math.round(min) + ' min ago';
+  const h = min / 60;
+  if (h < 2) return 'about an hour ago';
+  return Math.round(h) + ' hours ago';
+}
+
+function ec225StickyNote(min){
+  const el = document.getElementById('sticky-note');
+  if (!el) return;
+  el.innerHTML = 'Showing the inputs you last used here, from ' + ec225StickyAge(min)
+    + '. <a href="javascript:void(0)" onclick="ec225ResetInputs()">Reset to defaults</a>';
+  el.classList.add('show');
+}
+
+function ec225ResetInputs(){
+  ec225ApplyInputs(EC225_INPUT_DEFAULTS);
+  ec225RestoreExtra(EC225_EXTRA_DEFAULTS);
+  ec225ClearInputs();
+  const el = document.getElementById('sticky-note');
+  if (el){ el.classList.remove('show'); el.innerHTML = ''; }
+  ec225Recompute();
+}
+
+function ec225InitSticky(){
+  // Capture the markup's own defaults FIRST, so Reset has something true to
+  // go back to even after a restore has overwritten the fields.
+  EC225_INPUT_DEFAULTS = ec225SnapshotInputs();
+  EC225_EXTRA_DEFAULTS = ec225ExtraState();
+
+  let d = null;
+  try {
+    const raw = localStorage.getItem(EC225_INPUTS_KEY);
+    if (raw) d = JSON.parse(raw);
+  } catch (e) { d = null; }
+
+  if (d && d.v && d.savedAt){
+    const mins = (Date.now() - d.savedAt) / 60000;
+    if (mins > EC225_INPUTS_MAX_AGE_MIN){
+      ec225ClearInputs();            // too old to be this session's planning
+    } else {
+      ec225ApplyInputs(d.v);
+      ec225RestoreExtra(d.x);
+      ec225StickyNote(mins);
+      ec225Recompute();
+    }
+  }
+
+  ec225InputEls().forEach(function(e){
+    if (!e.addEventListener) return;
+    e.addEventListener('input', ec225SaveInputs);
+    e.addEventListener('change', ec225SaveInputs);
+  });
+}
+
+function ec225ExtraState(){ return null; }
+function ec225RestoreExtra(){ }
+function ec225Recompute(){ compute(); }
+ec225InitSticky();
+
   async function forceRefresh() {
     try {
       if ('serviceWorker' in navigator) {
